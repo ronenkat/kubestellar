@@ -257,7 +257,7 @@ The acceptable flags include all those of `kubectl` except for
   provider workspace.  The default is the standard location,
   `root:espw`.
 - `--syncer-image image_ref`: specifies the container image that runs
-  the syncer.  The default is `quay.io/kubestellar/syncer:v0.2.1`.
+  the syncer.  The default is `quay.io/kubestellar/syncer:{{ config.ks_tag }}`.
 - `-o output_pathname`: specifies where to write the YAML definitions
   of the API objects to create in the edge cluster in order to deploy
   the syncer there.  The default is `synctarget_name +
@@ -290,11 +290,11 @@ Creating or updating cluster role binding "kubestellar-syncer-demo1-28at01r3" to
 
 Wrote physical cluster manifest to demo1-syncer.yaml for namespace "kubestellar-syncer-demo1-28at01r3". Use
 
-  KUBECONFIG=<pcluster-config> kubectl apply -f "demo1-syncer.yaml"
+  KUBECONFIG=<workload-execution-cluster-config> kubectl apply -f "demo1-syncer.yaml"
 
 to apply it. Use
 
-  KUBECONFIG=<pcluster-config> kubectl get deployment -n "kubestellar-syncer-demo1-28at01r3" kubestellar-syncer-demo1-28at01r3
+  KUBECONFIG=<workload-execution-cluster-config> kubectl get deployment -n "kubestellar-syncer-demo1-28at01r3" kubestellar-syncer-demo1-28at01r3
 
 to verify the syncer pod is running.
 Current workspace is "root:espw".
@@ -344,11 +344,11 @@ Creating or updating cluster role binding "kubestellar-syncer-demo2-15nq4e94" to
 
 Wrote physical cluster manifest to demo2-syncer.yaml for namespace "kubestellar-syncer-demo2-15nq4e94". Use
 
-  KUBECONFIG=<pcluster-config> kubectl apply -f "demo2-syncer.yaml"
+  KUBECONFIG=<workload-execution-cluster-config> kubectl apply -f "demo2-syncer.yaml"
 
 to apply it. Use
 
-  KUBECONFIG=<pcluster-config> kubectl get deployment -n "kubestellar-syncer-demo2-15nq4e94" kubestellar-syncer-demo2-15nq4e94
+  KUBECONFIG=<workload-execution-cluster-config> kubectl get deployment -n "kubestellar-syncer-demo2-15nq4e94" kubestellar-syncer-demo2-15nq4e94
 
 to verify the syncer pod is running.
 ```

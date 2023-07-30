@@ -2,7 +2,7 @@
 Go to inventory management workspace and find the mailbox workspace name.
 ```shell
 kubectl ws root:imw-1
-mbws=`kubectl get SyncTarget florin -o jsonpath="{.metadata.annotations['kcp\.io/cluster']}-mb-{.metadata.uid}"`
+mbws=`kubectl get synctargets.edge.kcp.io florin -o jsonpath="{.metadata.annotations['kcp\.io/cluster']}-mb-{.metadata.uid}"`
 echo "mailbox workspace name = $mbws"
 ```
 ``` { .bash .no-copy }
@@ -27,11 +27,11 @@ Creating or updating cluster role binding "kubestellar-syncer-florin-32uaph9l" t
 
 Wrote physical cluster manifest to florin-syncer.yaml for namespace "kubestellar-syncer-florin-32uaph9l". Use
 
-  KUBECONFIG=<pcluster-config> kubectl apply -f "florin-syncer.yaml"
+  KUBECONFIG=<workload-execution-cluster-config> kubectl apply -f "florin-syncer.yaml"
 
 to apply it. Use
 
-  KUBECONFIG=<pcluster-config> kubectl get deployment -n "kubestellar-syncer-florin-32uaph9l" kubestellar-syncer-florin-32uaph9l
+  KUBECONFIG=<workload-execution-cluster-config> kubectl get deployment -n "kubestellar-syncer-florin-32uaph9l" kubestellar-syncer-florin-32uaph9l
 
 to verify the syncer pod is running.
 Current workspace is "root:espw".

@@ -1,3 +1,4 @@
+Aashni
 Aleksander
 API
 APIBinding
@@ -118,6 +119,7 @@ MERCHANTABILITY
 MVI
 Makefile
 ManagedFields
+Manroa
 Maximo
 MicroShift
 MikeSpreitzer
@@ -140,6 +142,7 @@ PermissionClaim
 PermissionClaims
 PersistentVolume
 PersistentVolumeClaim
+PlacementTranslator
 PoC
 PodDisruptionBudget
 PodTemplate
@@ -177,6 +180,7 @@ SinglePlacementSlice
 Slominski
 Spreitzer
 StatefulSet
+StatusSummary
 Stellari
 StorageClass
 Subresource
@@ -203,13 +207,17 @@ Upsynced
 Upsyncing
 ValidatingWebhookConfiguration
 VolumeAttachment
+WEC
+WECs
 WorkspaceType
 WMW
 WMWs
 WSL
 Youtube
+aarch
 admissionregistration
 afterall
+allclusters
 amd
 andy
 apache
@@ -220,6 +228,7 @@ apiGroup
 apiGroups
 apiVersion
 apiexport
+apiexports
 apiextensions
 apiregistration
 apiresource
@@ -266,6 +275,7 @@ denature
 denatured
 denaturing
 deployers
+dest
 dev
 discoverable
 dismayingly
@@ -279,16 +289,20 @@ ecutable
 edgeplacement
 edgesync
 edgesyncer
+ef
 egrep
 enablement
 env
 envar
+esac
 espw
 etcd
+exclusioninclusion
 exe
 executables
 faq
 fi
+filesystem
 flowcontrol
 george
 gh
@@ -384,9 +398,11 @@ programmatically
 prometheus
 provisioner
 proxying
+ps
 quickstart
 rbac
 readOnly
+readthedocs
 reconciler
 renature
 renatured
@@ -450,6 +466,8 @@ urls
 usr
 volumeMounts
 watchall
+wec
+wecs
 webhook
 webhooks
 wgpolicyk

@@ -2,15 +2,13 @@
 title: "Details"
 ---
 
-Want to get involved? Check out our [good-first-issue list]({{ config.repo_url }}/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
-
-
 ![poc2023q1 architecture](Edge-PoC-2023q1.svg)
 
 ## Status of this memo
 
-This summarizes the current state of design work that is still in
-progress.
+This summarizes the design for a Proof-of-Concept intended to be
+completed in early 2023.  It has been completed except for the
+summarization feature.
 
 ## Introduction
 
@@ -57,7 +55,7 @@ Some important things that are not attempted in this PoC include the following.
 - Very strong isolation between tenants in the edge computing
   platform.
 
-## Development Roadmap
+## Development Roadmap for this PoC
 
 Some features will get implemented later than others, so that we can
 start being able to run interesting end-to-end scenarios relatively
@@ -155,8 +153,8 @@ in an eventually consistent way, it is not just one-and-done.
 
 In this design the primary interface between infrastructure management
 and workload management is API objects in _inventory management_
-workspaces.  We abuse the `Location` and `SyncTarget` object types
-from [kcp TMC](https://github.com/kcp-dev/kcp/tree/v0.11.0/pkg/apis) for
+workspaces.  We use the `Location` and `SyncTarget` object types
+from Kubestellar's edge.kcp.io api group (created by `kubestellar init`) for
 this purpose.  The people doing infrastructure management are
 responsible for creating the inventory management workspaces and
 populating them with `Location` and `SyncTarget` objects, one
@@ -320,7 +318,7 @@ their workload desired and reported state.
 | core.kcp.io/v1alpha1 | LogicalCluster | false |
 | core.kcp.io/v1alpha1 | Shard | false |
 | events.k8s.io/v1 | Event | true |
-| scheduling.kcp.io/v1alpha1 | Location | false |
+|~~ scheduling.kcp.io/v1alpha1 | Location | false ~~|
 | scheduling.kcp.io/v1alpha1 | Placement | false |
 | tenancy.kcp.io/v1alpha1 | ClusterWorkspace | false |
 | tenancy.kcp.io/v1alpha1 | Workspace | false |
@@ -331,7 +329,7 @@ their workload desired and reported state.
 | v1 | ComponentStatus | false |
 | v1 | Event | true |
 | v1 | Node | false |
-| workload.kcp.io/v1alpha1 | SyncTarget | false |
+| ~~workload.kcp.io/v1alpha1 | SyncTarget | false~~ |
 
 #### Already denatured in center, want natured in edge
 
@@ -609,7 +607,7 @@ A mailbox workspace contains the following items.
 
 ## Edge cluster
 
-Also called edge pcluster.
+Also called workload execution cluster.
 
 One of these contains the following items.  FYI, these are the things
 in the YAML output by `kubectl kcp workload edge-sync`.  The

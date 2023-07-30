@@ -2,10 +2,11 @@ name: docs-ecutable - example1
 run-name: docs-ecutable - example1 - ${{ github.ref_name }}
 
 on:
+  workflow_call:
   # So we can trigger manually if needed
   workflow_dispatch:
   # To confirm any changes to docs build successfully, without deploying them
-  pull_request_target:
+  pull_request:
     branches:
       - main
       - "release-*"
@@ -34,7 +35,7 @@ env:
 
 jobs:
   docs-ecutable:
-    if: github.repository_owner == 'kubestellar'
+    #if: github.repository_owner == 'kubestellar'
     name: docs-ecutable - for example1 e2e
     runs-on: ubuntu-latest
     outputs:

@@ -14,6 +14,46 @@ pre_req_name: 'docs/content/common-subs/pre-req.md'
    start="<!--save-some-time-start-->"
    end="<!--save-some-time-end-->"
 %}
+
+## Usage of the Where Resolver
+
+The Where Resolver needs three Kubernetes client configurations.
+
+The first is needed to access the APIExport view of the `edge.kcp.io` API group.
+It must point to the edge service provider workspace that has this APIExport and
+is authorized to read its view for edge APIs.
+
+The second is needed to access the APIExport views of the `scheduling.kcp.io`
+and the `workload.kcp.io` API groups. It must point to the workspace that has
+these apiexports (which is the `root` workspace) and is authorized to read their
+views for the `Location` objects and `SyncTarget` objects, respectively.
+For example, there is a kubeconfig context named `root` in the kubeconfig
+created by `kcp start` which satisfies these requirements.
+
+The third is needed to maintain `SinglePlacementSlice` objects in all workload
+management workspaces; this should be a client config that is able to read/write
+in all clusters. For example, there is a kubeconfig context named `base` in the
+kubeconfig created by `kcp start` which satisfies these requirements.
+
+The command line flags, beyond the basics, are as follows.
+
+``` { .bash .no-copy }
+      --espw-cluster string                  The name of the kubeconfig cluster to use for access to the edge service provider workspace
+      --espw-context string                  The name of the kubeconfig context to use for access to the edge service provider workspace
+      --espw-kubeconfig string               Path to the kubeconfig file to use for access to the edge service provider workspace
+      --espw-user string                     The name of the kubeconfig user to use for access to the edge service provider workspace
+
+      --root-cluster string                  The name of the kubeconfig cluster to use for access to the root workspace (default "root")
+      --root-context string                  The name of the kubeconfig context to use for access to the root workspace
+      --root-kubeconfig string               Path to the kubeconfig file to use for access to the root workspace
+      --root-user string                     The name of the kubeconfig user to use for access to the root workspace (default "kcp-admin")
+
+      --base-cluster string                  The name of the kubeconfig cluster to use for access to all logical clusters as kcp-admin (default "base")
+      --base-context string                  The name of the kubeconfig context to use for access to all logical clusters as kcp-admin
+      --base-kubeconfig string               Path to the kubeconfig file to use for access to all logical clusters as kcp-admin
+      --base-user string                     The name of the kubeconfig user to use for access to all logical clusters as kcp-admin (default "kcp-admin")
+```
+
 ## Steps to try the Where Resolver
 
 ### Pull the kcp source code, build kcp, and start kcp
@@ -67,6 +107,7 @@ I0605 10:53:00.261128   29786 controller.go:201] "starting controller" controlle
 Use workspace `root:compute` as the Inventory Management Workspace (IMW).
 ```shell
 kubectl ws root:compute
+kubectl kcp bind apiexport root:espw:edge.kcp.io
 ```
 
 Create two Locations and two SyncTargets.
@@ -84,13 +125,13 @@ kubectl get locations,synctargets
 ```
 ``` { .bash .no-copy }
 NAME                                 RESOURCE      AVAILABLE   INSTANCES   LABELS   AGE
-location.scheduling.kcp.io/default   synctargets   0           2                    2m12s
-location.scheduling.kcp.io/dev       synctargets   0           1                    2m39s
-location.scheduling.kcp.io/prod      synctargets   0           1                    3m13s
+location.edge.kcp.io/default   synctargets   0           2                    2m12s
+location.edge.kcp.io/dev       synctargets   0           1                    2m39s
+location.edge.kcp.io/prod      synctargets   0           1                    3m13s
 
 NAME                              AGE
-synctarget.workload.kcp.io/dev    110s
-synctarget.workload.kcp.io/prod   2m12s
+synctarget.edge.kcp.io/dev    110s
+synctarget.edge.kcp.io/prod   2m12s
 ```
 
 ### Create some EdgePlacements in the WMW

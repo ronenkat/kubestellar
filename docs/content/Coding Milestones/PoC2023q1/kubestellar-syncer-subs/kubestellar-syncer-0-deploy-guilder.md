@@ -2,7 +2,11 @@
 Go to inventory management workspace and find the mailbox workspace name.
 ```shell
 kubectl ws root:imw-1
-mbws=`kubectl get SyncTarget guilder -o jsonpath="{.metadata.annotations['kcp\.io/cluster']}-mb-{.metadata.uid}"`
+kubectl get SyncTargets
+kubectl get synctargets.edge.kcp.io
+kubectl describe synctargets.edge.kcp.io guilder
+#kubectl describe Synctarget guilder
+mbws=`kubectl get synctargets.edge.kcp.io guilder -o jsonpath="{.metadata.annotations['kcp\.io/cluster']}-mb-{.metadata.uid}"`
 echo "mailbox workspace name = $mbws"
 ```
 ``` { .bash .no-copy }
@@ -27,11 +31,11 @@ Creating or updating cluster role binding "kubestellar-syncer-guilder-wfeig2lv" 
 
 Wrote physical cluster manifest to guilder-syncer.yaml for namespace "kubestellar-syncer-guilder-wfeig2lv". Use
 
-  KUBECONFIG=<pcluster-config> kubectl apply -f "guilder-syncer.yaml"
+  KUBECONFIG=<workload-execution-cluster-config> kubectl apply -f "guilder-syncer.yaml"
 
 to apply it. Use
 
-  KUBECONFIG=<pcluster-config> kubectl get deployment -n "kubestellar-syncer-guilder-wfeig2lv" kubestellar-syncer-guilder-wfeig2lv
+  KUBECONFIG=<workload-execution-cluster-config> kubectl get deployment -n "kubestellar-syncer-guilder-wfeig2lv" kubestellar-syncer-guilder-wfeig2lv
 
 to verify the syncer pod is running.
 Current workspace is "root:espw".

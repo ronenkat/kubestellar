@@ -1,5 +1,0 @@
----
-title: "Details"
----
-
-# Coming Soon
