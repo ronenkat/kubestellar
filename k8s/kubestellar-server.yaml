@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubestellar-pvc
+  namespace: kubestellar
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubestellar-server
+  namespace: kubestellar
+spec:
+  selector:
+    matchLabels:
+      app: kubestellar-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kubestellar-server
+    spec:
+      serviceAccountName: kubestellar-service-account
+      containers:
+      - name: kubestellar-server
+        image: quay.io/kubestellar/kubestellar:fs # for testing, change to :stable
+        imagePullPolicy: Always # for testing, change to IfNotPresent
+        env:
+        - name: EXTERNAL_HOSTNAME
+          value: "kubestellar.svc.cluster.local"
+        - name: EXTERNAL_PORT
+          value: "443"
+        - name: SECRET_NAMESPACES
+          value: ""
+        volumeMounts:
+        - name: kubestellar-pv
+          mountPath: "/kubestellar/home"
+          readOnly: false
+        ports:
+        - name: ks-port
+          protocol: TCP
+          containerPort: 6443
+      volumes:
+      - name: kubestellar-pv
+        persistentVolumeClaim:
+          claimName: kubestellar-pvc
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubestellar-service
+  namespace: kubestellar
+spec:
+  selector:
+    app: kubestellar-server
+  ports:
+    - protocol: TCP
+      port: 6443 # Default port for image
+      targetPort: ks-port
