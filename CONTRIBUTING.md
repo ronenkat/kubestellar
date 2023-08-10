@@ -12,10 +12,9 @@ We can't wait to collaborate with you!
 [Install Go](https://golang.org/doc/install) 1.19+.
   Please note that the go language version numbers in these files must exactly agree:
   
-    Your local go/go.mod file, kcp/.ci-operator.yaml, kcp/Dockerfile, and in all the kcp/.github/workflows yaml files that specify go-version.
+    Your local go/go.mod file, kcp/.ci-operator.yaml, and in all the kcp/.github/workflows yaml files that specify go-version.
     
     - In ./ci-operator.yaml the go version is indicated by the "tag" attribute.
-    - In ./Dockerfile it is indicated by the "golang" attribute
     - In go.mod it is indicated by the "go" directive.
     - In the .github/workflows yaml files it is indicated by "go-version"
     
@@ -74,10 +73,8 @@ script](bootstrap/bootstrap-kubestellar.sh) from the main branch of
 the main repo; if you want to contribute a change to that script then
 you will need to test your changed version.  Just run your local copy
 (perhaps in a special testing directory, just to be safe) and be sure
-to add the downloaded `bin` at the _front_ of your `$PATH` (contrary
-to [what the scripting currently tells
-you](bootstrap/install-kubestellar.sh)) so that your `git clone`'s
-`bin` does not shadow the one being tested.
+to add the downloaded `bin` at the _front_ of your `$PATH` so that
+your `git clone`'s `bin` does not shadow the one being tested.
 
 Note that changes to the bootstrap script start being used by users as
 soon as your PR merges.  Since this script can only fetch a released

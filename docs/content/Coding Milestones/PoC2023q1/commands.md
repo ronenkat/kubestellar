@@ -1,13 +1,21 @@
-This PoC includes two sorts of commands for users to use.  Most are
-executables delivered in the `bin` directory.  The other sort of
-command for users is a `bash` script that is designed to be fetched
-from github and fed directly into `bash`.
+---
+short_name: commands
+---
 
-# Executables
+This PoC includes two sorts of commands for users to use. Most are
+executables designed to be accessed in the usual ways: by appearing in
+a directory on the user's `$PATH` or by the user writing a pathname
+for the executable on the command line. The one exception is [the
+bootstrap script](#bootstrap), which is designed to be fetched from
+github and fed directly into `bash`.
 
-The command lines exhibited below presume that you have added the
-`bin` directory to your `$PATH`.  Alternatively: these executables can
-be invoked directly using any pathname (not in your `$PATH`).
+Most of these executables require that the kcp server be running and
+that `kubectl` is configured to use the kubeconfig file produced by
+`kcp start`. That is: either `$KUBECONFIG` holds the pathname of that
+kubeconfig file, its contents appear at `~/.kube/config`, or
+`--kubeconfig $pathname` appears on the command line.  The exceptions
+are the bootstrap script and [the kcp control script that runs before
+starting the kcp server](#kubestellar-ensure-kcp-server-creds).
 
 **NOTE**: all of the kubectl plugin usages described here certainly or
 potentially change the setting of which kcp workspace is "current" in
@@ -15,7 +23,178 @@ your chosen kubeconfig file; for this reason, they are not suitable
 for executing concurrently with anything that depends on that setting
 in that file.
 
-## Platform control
+## kcp control
+
+KubeStellar has some commands to support situations in which some
+clients of the kcp server need to connect to it by opening a
+connection to a DNS domain name rather than an IP address that the
+server can bind its socket to.  The key idea is using the
+`--tls-sni-cert-key` command line flag of `kcp start` to configure the
+server to respond with a bespoke server certificate in TLS handshakes
+in which the client addresses the server by a given domain name.
+
+These commands are used separately from starting the kcp server and
+are designed so that they can be used multiple times if there are
+multiple sets of clients that need to use a distinct domain name.
+Starting the kcp server is not described here, beyond the particular
+consideration needed for the `--tls-sni-cert-key` flag, because it is
+otherwise ordinary.
+
+### kubestellar-ensure-kcp-server-creds
+
+#### kubestellar-ensure-kcp-server-creds pre-reqs
+
+The `kubestellar-ensure-kcp-server-creds` command requires that
+Easy-RSA is installed.  As outlined in
+https://easy-rsa.readthedocs.io/en/latest/#obtaining-and-using-easy-rsa,
+this involves selecting a release archive from [the list on
+GitHub](https://github.com/OpenVPN/easy-rsa/releases), unpacking it,
+and adding the EasyRSA directory to your `$PATH`; `easyrsa` is a bash
+script, so you do not need to worry about building or fetching a
+binary specific to your OS or computer architecture.
+
+Easy-RSA uses [OpenSSL](https://www.openssl.org/), so you will need
+that installed too.
+
+#### kubestellar-ensure-kcp-server-creds usage
+
+This command is given exactly one thing on the command line, a DNS
+domain name.  This command creates --- or re-uses if it finds already
+existing --- a private key and public X.509 certificate for the kcp
+server to use.  The certificate has exactly one
+SubjectAlternativeName, which is of the DNS form and specifies the
+given domain name.  For example: `kubestellar-ensure-kcp-server-creds
+foo.bar` creates a certificate with one SAN, commonly rendered as
+`DNS:foo.bar`.
+
+This command uses a Public Key Infrastructure (PKI) and Certificate
+Authority (CA) implemented by
+[easy-rsa](https://github.com/OpenVPN/easy-rsa), rooted at the
+subdirectory `pki` of the current working directory.  This command
+will create the PKI if it does not already exist, and will initialize
+the CA if that has not already been done.  The CA's public certificate
+appears at the usual place for easy-rsa: `pki/ca.crt`.
+
+This command prints some stuff --- mostly progress remarks from
+easy-rsa --- to stderr and prints one line of results to stdout.  The
+`bash` shell will parse that one line as three words.  Each is an
+absolute pathname of one certificate or key.  The three are as
+follows.
+
+1. The CA certificate for the client to use in verifying the server.
+2. The X.509 certificate for the server to put in its ServerHello in a
+   TLS handshake in which the ClientHello has a Server Name Indicator
+   (SNI) that matches the given domain name.
+3. The private key corresponding to that server certificate.
+
+Following is an example of invoking this command and examining its
+results.
+
+```console
+bash-5.2$ eval pieces=($(scripts/kubestellar-ensure-kcp-server-creds yep.yep))
+Re-using PKI at /Users/mspreitz/go/src/github.com/kubestellar/kubestellar/pki
+Re-using CA at /Users/mspreitz/go/src/github.com/kubestellar/kubestellar/pki/private/ca.key
+Accepting existing credentials
+
+bash-5.2$ echo ${pieces[0]}
+/Users/mspreitz/go/src/github.com/kubestellar/kubestellar/pki/ca.crt
+
+bash-5.2$ echo ${pieces[1]}
+/Users/mspreitz/go/src/github.com/kubestellar/kubestellar/pki/issued/kcp-DNS-yep.yep.crt
+
+bash-5.2$ echo ${pieces[2]}
+/Users/mspreitz/go/src/github.com/kubestellar/kubestellar/pki/private/kcp-DNS-yep.yep.key
+```
+
+Following is an example of using those results in launching the kcp
+server.  The `--tls-sni-cert-key` flag can appear multiple times on
+the command line, configuring the server to respond in a different way
+to each of multiple different SNIs.
+
+```console
+bash-5.2$ kcp start --tls-sni-cert-key ${pieces[1]},${pieces[2]} &> /tmp/kcp.log &
+[1] 66974
+```
+
+### wait-and-switch-domain
+
+This command is for using after the kcp server has been launched.
+Since the `kcp start` command really means `kcp run`, all usage of
+that server has to be done by concurrent processes.  The
+`wait-and-switch-domain` command bundles two things: waiting for the
+kcp server to start handling kubectl requests, and making an alternate
+kubeconfig file for a set of clients to use.  This command is pointed
+at an existing kubeconfig file and reads it but does not write it; the
+alternate config file is written (its directory must already exist and
+be writable).  This command takes exactly six command line positional
+arguments, as follows.
+
+1. Pathname (absolute or relative) of the input kubeconfig.
+2. Pathname (absolute or relative) of the output kubeconfig.
+3. Name of the kubeconfig "context" that identifies what to replace.
+4. Domain name to put in the replacement server URLs.
+5. Port number to put in the replacement server URLs.
+6. Pathname (absolute or relative) of a file holding the CA
+   certificate to put in the alternate kubeconfig file.
+
+Creation of the alternate kubeconfig file starts by looking in the
+input kubeconfig file for the "context" with the given name, to find
+the name of a "cluster".  The server URL of that cluster is examined,
+and its `protocol://host:port` prefix is extracted.  The alternate
+kubeconfig will differ from the input kubeconfig in the contents of
+the cluster objects whose server URLs start with that same prefix.
+There will be the following two differences.
+
+1. In the server URL's `protocol://host:port` prefix, the host will be
+   replaced by the given domain name and the port will be replaced by
+   the given port.
+2. The cluster will be given a `certificate-authority-data` that holds
+   the contents (base64 encoded, as usual) of the given CA certificate
+   file.
+
+Following is an example of using this command and examining the
+results.  The context and port number chosen work for the kubeconfig
+file that `kcp start` (kcp release v0.11.0) creates by default.
+
+```console
+bash-5.2$ scripts/wait-and-switch-domain .kcp/admin.kubeconfig test.yaml root yep.yep 6443 ${pieces[0]}
+
+bash-5.2$ diff -w .kcp/admin.kubeconfig test.yaml 
+4,5c4,5
+<     certificate-authority-data: LS0...LQo=
+<     server: https://192.168.something.something:6443
+---
+>       certificate-authority-data: LS0...LQo=
+>       server: https://yep.yep:6443
+8,9c8,9
+<     certificate-authority-data: LS0...LQo=
+<     server: https://192.168.something.something:6443/clusters/root
+---
+>       certificate-authority-data: LS0...LQo=
+>       server: https://yep.yep:6443/clusters/root
+```
+
+Following is an example of using the alternate kubeconfig file, in a
+context where the domain name "yep.yep" resolves to an IP address of
+the network namespace in which the kcp server is running.
+
+```console
+bash-5.2$ KUBECONFIG=.kcp-yep.yep/admin.kubeconfig kubectl ws .
+Current workspace is "root".
+```
+
+Because this command reads the given kubeconfig file, it is important
+to invoke this command while nothing is concurrently writing it and
+while the caller reliably knows the name of a kubeconfig context that
+identifies what to replace.
+
+### switch-domain
+
+This command is the second part of `wait-and-switch-domain`: the part
+of creating the alternate kubeconfig file.  It has the same inputs and
+outputs and concurrency considerations.
+
+## KubeStellar Platform control
 
 The `kubestellar` command has three subcommands, one to finish setup
 and two for process control.
@@ -118,8 +297,16 @@ kubestellar-version
 In this PoC, the interface between infrastructure and workload
 management is inventory API objects.  Specifically, for each edge
 cluster there is a unique pair of SyncTarget and Location objects in a
-so-called inventory management workspace.  The following command helps
-with making that pair of objects.
+so-called inventory management workspace.  These kinds of objects were
+originally defined in kcp TMC, and now there is a copy of those
+definitions in KubeStellar.  It is the definitions in KubeStellar that
+should be referenced.  Those are in the Kubernetes API group
+`edge.kcp.io`, and they are exported from the
+[KubeStellar Core Space (KCS)](../../../../Getting-Started/user-guide/)) (the kcp workspace
+named `root:espw`).
+
+The following command helps with making that SyncTarget and Location
+pair and adding the APIBinding to `root:espw:edge.kcp.io` if needed.
 
 The usage synopsis is as follows.
 
@@ -144,8 +331,8 @@ The current workspaces does not matter if the IMW is explicitly
 specified.  Upon completion, the current workspace will be your chosen
 IMW.
 
-This command does not depend on the action of any of the 
-KubeStellar controllers.
+This command does not depend on the action of any of the KubeStellar
+controllers but does require that the KubeStellar Core Space (KCS) has been set up.
 
 An example usage follows.
 
@@ -192,10 +379,27 @@ spec:
 EOF
 ```
 
+The creation of the APIBinding is equivalent to the following command
+(in the same workspace).
+
+```shell
+kubectl create -f <<EOF
+apiVersion: apis.kcp.io/v1alpha1
+kind: APIBinding
+metadata:
+  name: edge.kcp.io
+spec:
+  reference:
+    export:
+      path: root:espw
+      name: edge.kcp.io
+EOF
+```
+
 This command operates in idempotent style, making whatever changes (if
 any) are needed to move from the current state to the desired state.
 Current limitation: it does not cast a skeptical eye on the spec of a
-pre-existing Location.
+pre-existing Location or APIBinding object.
 
 ## Removing SyncTarget/Location pairs
 
@@ -511,9 +715,7 @@ Current workspace is "root:my-org".
 kubectl kubestellar remove wmw demo1
 ```
 
-# Web-to-bash
-
-## Quick Setup
+## Bootstrap
 
 This is a combination of some installation and setup steps, for use in
 [the
@@ -568,62 +770,3 @@ the shell running the script.  Of course, if you run the script in a
 sub-shell then those environment effects terminate with that
 sub-shell; this script also prints out messages showing how to update
 the environment in another shell.
-
-## Install kcp and its kubectl plugins
-
-This script is directly available at [{{ config.repo_url }}/blob/{{ config.ks_branch }}/bootstrap/install-kubestellar.sh]({{ config.repo_url }}/blob/{{ config.ks_branch }}/bootstrap/install-kcp-with-plugins.sh) and does the following things.
-
-- Fetch and install the `kcp` server executable.
-- Fetch and install the kubectl plugins of kcp.
-
-This script accepts the following command line flags; all are
-optional.
-
-- `--version $version`: specifies the kcp release to use.  The default
-  is the latest.
-- `--OS $OS`: specifies the operating system to use in selecting the
-  executables to fetch and install.  Choices are `darwin` and `linux`.
-  Auto-detected if omitted.
-- `--arch $ARCH`: specifies the instruction set architecture to use in
-  selecting the executables to fetch and install.  Choices are `arm64`
-  and `amd64`.  Auto-detected if omitted.
-- `--ensure-folder $install_parent_dir`: specifies where to install
-  to.  This will be `mkdir -p`.  The default is `./kcp`.
-- `-V` or `--verbose`: increases the verbosity of output.  This is a
-  binary thing, not a matter of degree.
-- `-X`: makes the script `set -x` internally, for debugging.
-- `-h` or `--help`: print brief usage message and exit.
-
-Here install means only to unpack the downloaded archives, creating
-`$install_parent_dir/bin`.  If `$install_parent_dir/bin` is not
-already on your `$PATH` then this script will print out a message
-telling you to add it.
-
-## Install KubeStellar
-
-This script is directly available at
-[{{ config.repo_url }}/blob/{{ config.ks_branch }}/bootstrap/install-kubestellar.sh]({{ config.repo_url }}/blob/{{ config.ks_branch }}/bootstrap/install-kubestellar.sh)
-and will download and install KubeStellar.
-
-This script accepts the following command line arguments; all are
-optional.
-
-- `--version $version`: specifies the release of KubeStellar to use.
-  Defaults to the latest regular release.
-- `--OS $OS`: specifies the operating system to use in selecting the
-  executables to fetch and install.  Choices are `darwin` and `linux`.
-  Auto-detected if omitted.
-- `--arch $ARCH`: specifies the instruction set architecture to use in
-  selecting the executables to fetch and install.  Choices are `arm64`
-  and `amd64`.  Auto-detected if omitted.
-- `--ensure-folder $install_parent_dir`: specifies where to install
-  to.  This will be `mkdir -p`.  The default is `./kubestellar`.
-- `-V` or `--verbose`: increases the verbosity of output.  This is a
-  binary thing, not a matter of degree.
-- `-X`: makes the script `set -x` internally, for debugging.
-- `-h` or `--help`: print brief usage message and exit.
-
-Here install means only to unpack the downloaded archive, creating
-`$install_parent_dir/bin`.  If `$install_parent_dir/bin` is not
-already on your `$PATH` then this script will print out a message
-telling you to add it.

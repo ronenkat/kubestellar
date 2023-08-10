@@ -45,9 +45,7 @@ import (
 	clusterdynamic "github.com/kcp-dev/client-go/dynamic"
 	kcpkubecorev1informers "github.com/kcp-dev/client-go/informers/core/v1"
 	kcpkubecorev1client "github.com/kcp-dev/client-go/kubernetes/typed/core/v1"
-	schedulingv1a1 "github.com/kcp-dev/kcp/pkg/apis/scheduling/v1alpha1"
 	tenancyv1a1 "github.com/kcp-dev/kcp/pkg/apis/tenancy/v1alpha1"
-	schedulingv1a1listers "github.com/kcp-dev/kcp/pkg/client/listers/scheduling/v1alpha1"
 	tenancyv1a1listers "github.com/kcp-dev/kcp/pkg/client/listers/tenancy/v1alpha1"
 	"github.com/kcp-dev/logicalcluster/v3"
 
@@ -85,7 +83,8 @@ func NewWorkloadProjector(
 	mbwsInformer k8scache.SharedIndexInformer,
 	mbwsLister tenancyv1a1listers.WorkspaceLister,
 	locationClusterInformer kcpcache.ScopeableSharedIndexInformer,
-	locationClusterLister schedulingv1a1listers.LocationClusterLister,
+	//locationClusterLister schedulingv1a1listers.LocationClusterLister,
+	locationClusterLister edgev1a1listers.LocationClusterLister,
 	syncfgClusterInformer kcpcache.ScopeableSharedIndexInformer,
 	syncfgClusterLister edgev1a1listers.SyncerConfigClusterLister,
 	customizerClusterInformer kcpcache.ScopeableSharedIndexInformer,
@@ -311,7 +310,7 @@ type workloadProjector struct {
 	queue                     workqueue.RateLimitingInterface
 	mbwsLister                tenancyv1a1listers.WorkspaceLister
 	locationClusterInformer   kcpcache.ScopeableSharedIndexInformer
-	locationClusterLister     schedulingv1a1listers.LocationClusterLister
+	locationClusterLister     edgev1a1listers.LocationClusterLister
 	syncfgClusterInformer     kcpcache.ScopeableSharedIndexInformer
 	syncfgClusterLister       edgev1a1listers.SyncerConfigClusterLister
 	customizerClusterInformer kcpcache.ScopeableSharedIndexInformer
@@ -1086,7 +1085,7 @@ func (wp *workloadProjector) customizeOrCopy(logger klog.Logger, srcCluster logi
 			expandParameters = expandParameters || customizer.Annotations[edgeapi.ParameterExpansionAnnotationKey] == "true"
 		}
 	}
-	var location *schedulingv1a1.Location
+	var location *edgeapi.Location
 	if expandParameters {
 		location, err = wp.locationClusterLister.Cluster(logicalcluster.Name(destSP.Cluster)).Get(destSP.LocationName)
 		if err != nil {
